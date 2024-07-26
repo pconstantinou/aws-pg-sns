@@ -67,9 +67,10 @@ func main() {
 	email := os.Getenv("EMAIL")
 	region := Getenv("REGION", "us-west-2")
 	sender := Getenv("SENDER", "constantinou@gmail.com")
+	ssl := Getenv("SSL", "disable")
 
 	// Construct the PostgreSQL connection string
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbHost, dbPort, dbUser, dbPassword, dbName, ssl)
 
 	// Connect to the PostgreSQL database
 	db, err := sql.Open("postgres", connStr)
