@@ -10,7 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/ses"
 	_ "github.com/lib/pq"
 )
 
@@ -22,7 +22,10 @@ func Getenv(key string, d string) string {
 	return d
 }
 
+const charSet = "UTF-8"
+
 func main() {
+
 	// Database connection settings
 	dbHost := Getenv("DB_HOST", "localhost")
 	dbPort := Getenv("DB_PORT", "5432")
@@ -30,9 +33,9 @@ func main() {
 	dbPassword := Getenv("DB_PASSWORD", "password")
 	dbName := Getenv("DB_NAME", "postgres")
 	query := Getenv("QUERY", "select count(*) count, date(create_date) create_date from members group by 2 order by 2 desc limit 10")
-	topicArn := os.Getenv("SNS_TOPIC_ARN")
 	email := os.Getenv("EMAIL")
 	region := Getenv("REGION", "us-west-2")
+	sender := Getenv("SENDER", "constantinou@gmail.com")
 
 	// Construct the PostgreSQL connection string
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
@@ -104,27 +107,42 @@ func main() {
 	}
 
 	// Create SNS service client
-	svc := sns.New(sess)
+	svc := ses.New(sess)
 
 	// Publish result to SNS
 	message := result.String()
 	subject := "6th Sense Daily Stats"
-	input := &sns.PublishInput{
-		Message:  &message,
-		Subject:  &subject,
-		TopicArn: &topicArn,
-		MessageAttributes: map[string]*sns.MessageAttributeValue{
-			"email": {
-				DataType:    aws.String("String"),
-				StringValue: aws.String(email),
+	input := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: []*string{
+				aws.String(email),
 			},
 		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Html: &ses.Content{
+					Charset: aws.String(charSet),
+					Data:    aws.String("<CODE>" + message + "</CODE>"),
+				},
+				Text: &ses.Content{
+					Charset: aws.String(charSet),
+					Data:    aws.String(message),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String(charSet),
+				Data:    aws.String(subject),
+			},
+		},
+		Source: aws.String(sender),
 	}
 
-	_, err = svc.Publish(input)
+	// Attempt to send the email
+	res, err := svc.SendEmail(input)
 	if err != nil {
-		log.Fatalf("Failed to publish message to SNS: %v", err)
+		log.Fatalf("Failed to send email: %v", err)
 	}
 
 	fmt.Println("Query result emailed successfully!")
+	fmt.Println(res.GoString())
 }
