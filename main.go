@@ -24,6 +24,37 @@ func Getenv(key string, d string) string {
 
 const charSet = "UTF-8"
 
+type htmlbuilder struct {
+	strings.Builder
+}
+
+type attribute struct {
+	key   string
+	value string
+}
+
+var alignRight = attribute{key: "align", value: "right"}
+var alignLeft = attribute{key: "align", value: "left"}
+var alignCenter = attribute{key: "align", value: "left"}
+
+func (h *htmlbuilder) WriteOpenTag(tag string, aa ...attribute) {
+	h.WriteString("<")
+	h.WriteString(tag)
+	for _, a := range aa {
+		h.WriteString(" ")
+		h.WriteString(a.key)
+		h.WriteString("=")
+		h.WriteString(a.value)
+	}
+	h.WriteString(">")
+}
+
+func (h *htmlbuilder) WriteCloseTag(tag string) {
+	h.WriteString("</")
+	h.WriteString(tag)
+	h.WriteString(">\n")
+}
+
 func main() {
 
 	// Database connection settings
@@ -60,21 +91,23 @@ func main() {
 		log.Fatalf("Failed to fetch column names: %v", err)
 	}
 
-	var htmlResult strings.Builder
+	var htmlResult htmlbuilder
 
-	htmlResult.WriteString("<table>")
+	htmlResult.WriteOpenTag("table")
 
 	const stringFormat = "%25s"
 	const variableFormat = "%25v"
 	// Prepare result string
 	var result strings.Builder
-	htmlResult.WriteString("<tr>")
+	htmlResult.WriteOpenTag("tr")
 
 	for _, column := range columns {
 		result.WriteString(fmt.Sprintf(stringFormat, column))
-		htmlResult.WriteString(fmt.Sprintf("<th>%s</th>", column))
+		htmlResult.WriteOpenTag("th", alignCenter)
+		htmlResult.WriteString(column)
+		htmlResult.WriteCloseTag("th")
 	}
-	htmlResult.WriteString("</tr>\n")
+	htmlResult.WriteCloseTag("tr")
 	result.WriteString("\n")
 
 	// Process rows
@@ -88,26 +121,29 @@ func main() {
 		if err := rows.Scan(columnPointers...); err != nil {
 			log.Fatalf("Failed to scan row: %v", err)
 		}
-		htmlResult.WriteString("<tr>")
+		htmlResult.WriteOpenTag("tr")
 
 		for _, value := range columnValues {
 			if value == nil {
 				result.WriteString(fmt.Sprintf(stringFormat, "-"))
-				htmlResult.WriteString(fmt.Sprintf("<td align=center>%s</td>", "-"))
+				htmlResult.WriteOpenTag("td", alignCenter)
+				htmlResult.WriteString("-")
 
 			} else if t, ok := value.(time.Time); ok && t.Hour() == 0 && t.Minute() == 0 && t.Second() == 0 {
 				result.WriteString(fmt.Sprintf(stringFormat, t.Format(time.DateOnly)))
-				htmlResult.WriteString(fmt.Sprintf("<td align=right>%s</td>", t.Format(time.DateOnly)))
+				htmlResult.WriteOpenTag("td", alignRight)
+				htmlResult.WriteString(t.Format(time.DateOnly))
 			} else {
 				result.WriteString(fmt.Sprintf(variableFormat, value))
-				htmlResult.WriteString(fmt.Sprintf("<td align=right>%v</td>", value))
+				htmlResult.WriteOpenTag("td", alignRight)
+				htmlResult.WriteString(fmt.Sprintf("%v", value))
 			}
 		}
 		result.WriteString("\n")
-		htmlResult.WriteString("</tr>\n")
+		htmlResult.WriteCloseTag("tr")
 	}
 
-	htmlResult.WriteString("</table>")
+	htmlResult.WriteCloseTag("table")
 
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Error iterating over rows: %v", err)
@@ -153,6 +189,8 @@ func main() {
 		Source: aws.String(sender),
 	}
 
+	fmt.Println(htmlResult.String())
+
 	// Attempt to send the email
 	res, err := svc.SendEmail(input)
 	if err != nil {
@@ -161,4 +199,5 @@ func main() {
 
 	fmt.Println("Query result emailed successfully!")
 	fmt.Println(res.GoString())
+
 }
