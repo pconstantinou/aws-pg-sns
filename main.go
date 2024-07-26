@@ -35,7 +35,7 @@ type attribute struct {
 
 var alignRight = attribute{key: "align", value: "right"}
 var alignLeft = attribute{key: "align", value: "left"}
-var alignCenter = attribute{key: "align", value: "left"}
+var alignCenter = attribute{key: "align", value: "center"}
 
 func (h *htmlbuilder) WriteOpenTag(tag string, aa ...attribute) {
 	h.WriteString("<")
