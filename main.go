@@ -139,6 +139,7 @@ func main() {
 				htmlResult.WriteOpenTag("td", alignRight)
 				htmlResult.WriteString(fmt.Sprintf("%v", value))
 			}
+			htmlResult.WriteCloseTag("td")
 		}
 		result.WriteString("\n")
 		htmlResult.WriteCloseTag("tr")
