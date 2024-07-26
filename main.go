@@ -60,13 +60,21 @@ func main() {
 		log.Fatalf("Failed to fetch column names: %v", err)
 	}
 
+	var htmlResult strings.Builder
+
+	htmlResult.WriteString("<table>")
+
 	const stringFormat = "%25s"
 	const variableFormat = "%25v"
 	// Prepare result string
 	var result strings.Builder
+	htmlResult.WriteString("<tr>")
+
 	for _, column := range columns {
 		result.WriteString(fmt.Sprintf(stringFormat, column))
+		htmlResult.WriteString(fmt.Sprintf("<th>%s</th>", column))
 	}
+	htmlResult.WriteString("</tr>\n")
 	result.WriteString("\n")
 
 	// Process rows
@@ -80,18 +88,26 @@ func main() {
 		if err := rows.Scan(columnPointers...); err != nil {
 			log.Fatalf("Failed to scan row: %v", err)
 		}
+		htmlResult.WriteString("<tr>")
 
 		for _, value := range columnValues {
 			if value == nil {
 				result.WriteString(fmt.Sprintf(stringFormat, "-"))
+				htmlResult.WriteString(fmt.Sprintf("<td align=center>%s</td>", "-"))
+
 			} else if t, ok := value.(time.Time); ok && t.Hour() == 0 && t.Minute() == 0 && t.Second() == 0 {
 				result.WriteString(fmt.Sprintf(stringFormat, t.Format(time.DateOnly)))
+				htmlResult.WriteString(fmt.Sprintf("<td align=right>%s</td>", t.Format(time.DateOnly)))
 			} else {
 				result.WriteString(fmt.Sprintf(variableFormat, value))
+				htmlResult.WriteString(fmt.Sprintf("<td align=right>%v</td>", value))
 			}
 		}
 		result.WriteString("\n")
+		htmlResult.WriteString("</tr>\n")
 	}
+
+	htmlResult.WriteString("</table>")
 
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Error iterating over rows: %v", err)
@@ -122,7 +138,7 @@ func main() {
 			Body: &ses.Body{
 				Html: &ses.Content{
 					Charset: aws.String(charSet),
-					Data:    aws.String("<CODE>" + message + "</CODE>"),
+					Data:    aws.String(htmlResult.String()),
 				},
 				Text: &ses.Content{
 					Charset: aws.String(charSet),
