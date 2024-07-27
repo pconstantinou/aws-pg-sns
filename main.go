@@ -22,39 +22,6 @@ func Getenv(key string, d string) string {
 	return d
 }
 
-const charSet = "UTF-8"
-
-type htmlbuilder struct {
-	strings.Builder
-}
-
-type attribute struct {
-	key   string
-	value string
-}
-
-var alignRight = attribute{key: "align", value: "right"}
-var alignLeft = attribute{key: "align", value: "left"}
-var alignCenter = attribute{key: "align", value: "center"}
-
-func (h *htmlbuilder) WriteOpenTag(tag string, aa ...attribute) {
-	h.WriteString("<")
-	h.WriteString(tag)
-	for _, a := range aa {
-		h.WriteString(" ")
-		h.WriteString(a.key)
-		h.WriteString("=")
-		h.WriteString(a.value)
-	}
-	h.WriteString(">")
-}
-
-func (h *htmlbuilder) WriteCloseTag(tag string) {
-	h.WriteString("</")
-	h.WriteString(tag)
-	h.WriteString(">\n")
-}
-
 func main() {
 
 	// Database connection settings
@@ -94,6 +61,8 @@ func main() {
 
 	var htmlResult htmlbuilder
 
+	htmlResult.WriteOpenTag("H1").Text(fmt.Sprintf("Report for %s", time.Now().Format(time.DateOnly))).WriteCloseTag("H1")
+
 	htmlResult.WriteOpenTag("table")
 
 	const stringFormat = "%25s"
@@ -112,6 +81,9 @@ func main() {
 	result.WriteString("\n")
 
 	// Process rows
+	rowCycles := cycler[attribute]{
+		values: []attribute{backgroundWhiteColor, backgroundColor},
+	}
 	for rows.Next() {
 		columnPointers := make([]interface{}, len(columns))
 		columnValues := make([]interface{}, len(columns))
@@ -122,7 +94,7 @@ func main() {
 		if err := rows.Scan(columnPointers...); err != nil {
 			log.Fatalf("Failed to scan row: %v", err)
 		}
-		htmlResult.WriteOpenTag("tr")
+		htmlResult.WriteOpenTag("tr", rowCycles.next())
 
 		for _, value := range columnValues {
 			if value == nil {
