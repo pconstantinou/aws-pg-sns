@@ -73,9 +73,7 @@ func main() {
 
 	for _, column := range columns {
 		result.WriteString(fmt.Sprintf(stringFormat, column))
-		htmlResult.WriteOpenTag("th", alignCenter)
-		htmlResult.WriteString(column)
-		htmlResult.WriteCloseTag("th")
+		htmlResult.Wrap("th", column, alignCenter, smallCaps)
 	}
 	htmlResult.WriteCloseTag("tr")
 	result.WriteString("\n")

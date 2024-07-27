@@ -19,8 +19,9 @@ type attribute struct {
 var alignRight = attribute{key: "align", value: "right"}
 var alignLeft = attribute{key: "align", value: "left"}
 var alignCenter = attribute{key: "align", value: "center"}
-var backgroundColor = attribute{"background-color", "#f2f2f2"}
-var backgroundWhiteColor = attribute{"background-color", "#ffffff"}
+var backgroundColor = attribute{"style", "background-color: #f2f2f2;"}
+var backgroundWhiteColor = attribute{"style", "background-color: ##ffffff;"}
+var smallCaps = attribute{"style", "font-variant: small-caps;"}
 
 func (h *htmlbuilder) WriteOpenTag(tag string, aa ...attribute) *htmlbuilder {
 	h.WriteString("<")
@@ -34,6 +35,10 @@ func (h *htmlbuilder) WriteOpenTag(tag string, aa ...attribute) *htmlbuilder {
 	}
 	h.WriteString(">")
 	return h
+}
+
+func (h *htmlbuilder) Wrap(tag string, text string, aa ...attribute) *htmlbuilder {
+	return h.WriteOpenTag(tag, aa...).Text(text).WriteCloseTag(tag)
 }
 
 func (h *htmlbuilder) WriteCloseTag(tag string) *htmlbuilder {
