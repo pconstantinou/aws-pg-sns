@@ -77,6 +77,7 @@ func main() {
 	}
 	htmlResult.WriteCloseTag("tr")
 	result.WriteString("\n")
+	start := time.Now()
 
 	// Process rows
 	rowCycles := cycler[attribute]{
@@ -116,6 +117,8 @@ func main() {
 	}
 
 	htmlResult.WriteCloseTag("table")
+	htmlResult.WriteOpenTag("hr").WriteCloseTag("hr")
+	htmlResult.Wrap("code", fmt.Sprintf("Query took %v.", time.Until(start)))
 
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Error iterating over rows: %v", err)
