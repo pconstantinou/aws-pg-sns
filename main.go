@@ -120,6 +120,14 @@ func main() {
 	htmlResult.WriteOpenTag("hr").WriteCloseTag("hr")
 	htmlResult.Wrap("code", fmt.Sprintf("Query took %v.", time.Until(start)))
 
+	rows, err = db.Query("select count(*) from members")
+	if err == nil && rows.Next() {
+		var count int
+		_ = rows.Scan(&count)
+		htmlResult.Wrap("code", fmt.Sprintf("Total users: %v.", count))
+		rows.Close()
+	}
+
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Error iterating over rows: %v", err)
 	}
